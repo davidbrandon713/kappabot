@@ -7,12 +7,15 @@ import numpy as np
 from dotenv import load_dotenv
 load_dotenv()
 
+
+# Initializing bot and intents
 description = 'A bot used for practicing Python'
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
 
+# Prefix '!' in servers, no prefix in DMs
 def command_prefix(bot, message):
     """Command prefix"""
     if message.guild is None:
@@ -21,29 +24,36 @@ def command_prefix(bot, message):
         return '!'
 
 
+# Assigning intents *REQUIRED TO ACCESS MESSAGE CONTENTS*
 bot = commands.Bot(command_prefix=command_prefix, description=description, intents=intents)
 
 
+# =================== Triggers one time upon startup =======================
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('------')
 
 
+# ============= Triggers every time a message is sent ==================
 @bot.event
 async def on_message(message):
+    # if the bot wrote the message, ignore
     if message.author == bot.user:
         return
     try:
+        # determine if message is command or not
         ctx = await bot.get_context(message)
         if not ctx.command or not ctx.valid:
             return
+        # message is command, process the command and log to console
         await bot.process_commands(message)
         print(f"{message.author} said '{message.content}' in {message.channel} ({message.guild})")
     except Exception as e:
         print(e)
 
 
+# ============ Triggers any time an error occurs ==============
 @bot.event
 async def on_command_error(ctx, error):
     """Command error handler"""
@@ -63,6 +73,7 @@ async def on_command_error(ctx, error):
         return
 
 
+# ============================== COMMANDS ===================================
 @bot.command()
 @commands.cooldown(1, 1, commands.BucketType.user)
 async def roll(ctx, dice: str = commands.parameter(default="1d6", description=": must be NdN format")):
@@ -130,5 +141,5 @@ async def schmee(ctx):
         await ctx.send(f"Something went wrong", delete_after=2)
         return
 
-
+# Run bot
 bot.run(os.getenv("token"))
