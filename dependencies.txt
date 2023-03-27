@@ -1,0 +1,6 @@
+os
+traceback
+discord
+random
+numpy
+python-dotenv

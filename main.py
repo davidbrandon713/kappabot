@@ -1,13 +1,12 @@
 import os
-
-from dotenv import load_dotenv
 import traceback
 import discord
 from discord.ext import commands
-import numpy as np
 import random
-
+import numpy as np
+from dotenv import load_dotenv
 load_dotenv()
+
 description = 'A bot used for practicing Python'
 intents = discord.Intents.default()
 intents.members = True
@@ -132,4 +131,4 @@ async def schmee(ctx):
         return
 
 
-bot.run(os.environ.get("token"))
+bot.run(os.getenv("token"))
