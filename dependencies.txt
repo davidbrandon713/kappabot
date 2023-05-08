@@ -1,6 +1,6 @@
 os
 traceback
-discord
 random
+discord
 numpy
 python-dotenv
