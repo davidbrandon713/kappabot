@@ -16,13 +16,22 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
+allowed_channels = [
+    1090398857302638635,
+    1257847889489825815,
+]
 
-# Prefix '!' in servers, no prefix in DMs
+allowed_guilds = [
+    1032439727757996053,
+]
+
+
+# Prefix '-' in servers, no prefix in DMs
 def command_prefix(bot, message):
     if message.guild is None:
         return ''
     else:
-        return '!'
+        return '-'
 
 
 # Assigning intents *REQUIRED TO ACCESS MESSAGE CONTENTS*
@@ -42,16 +51,17 @@ async def on_message(message):
     # if the bot wrote the message, ignore
     if message.author == bot.user:
         return
-    try:
-        # determine if message is command or not
-        ctx = await bot.get_context(message)
-        if not ctx.command or not ctx.valid:
-            return
-        # message is command, process the command and log to console
-        await bot.process_commands(message)
-        print(f"{message.author} said '{message.content}' in {message.channel} ({message.guild})")
-    except Exception:
-        pass
+    if message.channel.id in allowed_channels or message.guild.id in allowed_guilds:
+        try:
+            # determine if message is command or not
+            ctx = await bot.get_context(message)
+            if not ctx.command or not ctx.valid:
+                return
+            # message is command, process the command and log to console
+            await bot.process_commands(message)
+            print(f"{message.author} said '{message.content}' in #{message.channel} ({message.guild})")
+        except Exception:
+            pass
 
 
 # ============ Triggers any time an error occurs ==============
@@ -100,7 +110,7 @@ async def flip(ctx):
         if ctx.message.guild:
             await ctx.message.delete()
         coin = 'Heads' if number == 1 else 'Tails'
-        await ctx.send(coin, delete_after=10)
+        await ctx.send(coin)
 
     except Exception:
         await ctx.send(f"Something went wrong", delete_after=2)
@@ -159,12 +169,14 @@ async def gabe(ctx):
             if gabe_dict[author_id] < rand_num + 1:
                 await ctx.send(f"**New high score!**\nPrevious was {gabe_dict[author_id]}")
                 gabe_dict[author_id] = rand_num + 1
+                # sort
                 with open("gabe_dict.json", "w") as f:
                     sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
                     sorted_dict = dict(sorted_list)
                     json.dump(sorted_dict, f)
         else:
             gabe_dict[author_id] = rand_num + 1
+            # sort
             with open("gabe_dict.json", "w") as f:
                 sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
                 sorted_dict = dict(sorted_list)
@@ -210,6 +222,28 @@ async def glb(ctx):
         return
 
 
+# Random cat image
+
+@bot.command()
+@commands.cooldown(1, 1, commands.BucketType.user)
+async def cat(ctx):
+    """Get a random image of a cat"""
+    try:
+        if ctx.message.guild:
+            await ctx.message.delete()
+        res = requests.get(f"https://api.thecatapi.com/v1/images/search")
+        data = res.json()
+        await ctx.send(data[0]['url'])
+
+    except Exception as e:
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        return
+
+
+
+
+# WFM
 @bot.command()
 @commands.cooldown(1, 1, commands.BucketType.user)
 async def orders(ctx, *, arg):
@@ -244,7 +278,16 @@ async def orders(ctx, *, arg):
 async def test(ctx):
     if ctx.message.guild:
         await ctx.message.delete()
-    await ctx.send(ctx.message.content, delete_after=2)
+    await ctx.send("Test", delete_after=2)
+
+
+@bot.command()
+async def say(ctx, arg):
+    if ctx.message.guild:
+        await ctx.message.delete()
+    if ctx.author.id != 107317852612075520:
+        return
+    await ctx.send(arg)
 
 
 # Run bot
