@@ -4,3 +4,4 @@ pyvenv.cfg
 .env
 /gabe_dict_spam.json
 /gabe_dict_test.json
+.gitignore
