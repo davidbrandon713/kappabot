@@ -47,7 +47,7 @@ async def on_ready():
 # ============= Triggers every time a message is sent ==================
 @bot.event
 async def on_message(message):
-    # if the bot wrote the message, ignore
+    # if a bot wrote the message, ignore
     if message.author == bot.user:
         return
     if str(message.channel.id) in allowed_channels or str(message.guild.id) in allowed_guilds:
@@ -300,7 +300,9 @@ async def orders(ctx, *, arg):
         data = res.json()
         order_data = data['payload']['orders']
         sorted_data = list(sorted(order_data, key=lambda x: x['platinum']))
-        filtered_data = list(filter(lambda x: x['order_type'] == 'sell', sorted_data))
+        filtered_data = list(
+            filter(lambda x: x['order_type'] == 'sell' and x['user']['status'] == 'ingame', sorted_data)
+        )
 
         displayed_users = '\n'.join(order['user']['ingame_name'] for order in filtered_data[0:8])
         displayed_prices = '\n'.join(str(order['platinum']) for order in filtered_data[0:8])
@@ -313,7 +315,9 @@ async def orders(ctx, *, arg):
             colour=discord.Color.dark_teal(),
             title=arg.title() + " Orders",
         )
-        embed.set_thumbnail(url=f"https://warframe.market/static/assets/{data['include']['item']['items_in_set'][0]['thumb']}")
+        embed.set_thumbnail(
+            url=f"https://warframe.market/static/assets/{data['include']['item']['items_in_set'][0]['thumb']}"
+        )
         embed.add_field(name="User", inline=True, value=displayed_users)
         embed.add_field(name="Price", inline=True, value=displayed_prices)
         embed.add_field(name="Quantity", inline=True, value=displayed_quantity)
