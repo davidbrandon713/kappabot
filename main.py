@@ -154,10 +154,10 @@ async def gabe(ctx):
     """Gabe gambler"""
 
     def sort_and_save():
-        with open("gabe_dict.json", "w") as x:
+        with open("gabe_dict.json", "w") as w:
             sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
             sorted_dict = dict(sorted_list)
-            json.dump(sorted_dict, x)
+            json.dump(sorted_dict, w)
 
     try:
         author_id = str(ctx.author.id)
@@ -173,8 +173,8 @@ async def gabe(ctx):
             await ctx.send(f"Ga{'a'*rand_num}be ({displayed_num})")
 
         # open json file
-        with open("gabe_dict.json", "r") as f:
-            gabe_dict = json.load(f)
+        with open("gabe_dict.json", "r") as r:
+            gabe_dict = json.load(r)
 
         # check all values in case of sorting issue
         for value in gabe_dict.values():
@@ -221,8 +221,8 @@ async def glb(ctx):
         ranks = "1\n2\n3\n4\n5"
 
         # open json file
-        with open("gabe_dict.json", "r") as f:
-            gabe_dict_unsorted = json.load(f)
+        with open("gabe_dict.json", "r") as r:
+            gabe_dict_unsorted = json.load(r)
             # sort for good measure
             sorted_list = sorted(gabe_dict_unsorted.items(), key=lambda x: x[1], reverse=True)
             gabe_dict = dict(sorted_list)
