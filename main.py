@@ -23,6 +23,7 @@ openai_client = OpenAI(
     project=os.getenv("OPENAI_PROJECT_ID"),
     organization=os.getenv("OPENAI_ORGANIZATION_ID"),
 )
+gabe_file = "gabe_dict.json"
 
 
 # Prefix '-' in servers, no prefix in DMs
@@ -154,7 +155,7 @@ async def gabe(ctx):
     """Gabe gambler"""
 
     def sort_and_save():
-        with open("gabe_dict.json", "w") as w:
+        with open(gabe_file, "w") as w:
             sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
             sorted_dict = dict(sorted_list)
             json.dump(sorted_dict, w)
@@ -173,7 +174,7 @@ async def gabe(ctx):
             await ctx.send(f"Ga{'a'*rand_num}be ({displayed_num})")
 
         # open json file
-        with open("gabe_dict.json", "r") as r:
+        with open(gabe_file, "r") as r:
             gabe_dict = json.load(r)
 
         # check all values in case of sorting issue
@@ -218,20 +219,24 @@ async def glb(ctx):
     """Gabe leaderboard"""
     try:
         author_id = str(ctx.author.id)
-        ranks = "1\n2\n3\n4\n5"
+        ranks_list = ["1", "2", "3", "4", "5"]
+        # ranks = "1\n2\n3\n4\n5"
 
         # open json file
-        with open("gabe_dict.json", "r") as r:
+        with open(gabe_file, "r") as r:
             gabe_dict_unsorted = json.load(r)
             # sort for good measure
             sorted_list = sorted(gabe_dict_unsorted.items(), key=lambda x: x[1], reverse=True)
             gabe_dict = dict(sorted_list)
 
-        gabe_keys = list(gabe_dict.keys())[0: 5]
-        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys])
+        gabe_keys_list = list(gabe_dict.keys())[0: 5]
+        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys_list])
 
-        gabe_vals = list(gabe_dict.values())[0: 5]
-        gabe_vals = '\n'.join(str(v) for v in gabe_vals)
+        gabe_vals_list = list(gabe_dict.values())[0: 5]
+        gabe_vals = '\n'.join(str(v) for v in gabe_vals_list)
+
+        print(len(gabe_keys_list))
+        ranks = '\n'.join(ranks_list[0:len(gabe_keys_list)])
 
         # if you're not in the top 5
         if author_id not in gabe_keys and author_id in gabe_dict:
