@@ -2,6 +2,6 @@
 /venv
 pyvenv.cfg
 .env
+/gabe_dict.json
 /gabe_dict_spam.json
 /gabe_dict_test.json
-.gitignore
