@@ -13,6 +13,8 @@ load_dotenv()
 
 # Initializing bot and intents
 description = 'A bot used for practicing Python'
+allowed_channels = os.getenv("ALLOWED_CHANNELS").split(', ')
+allowed_guilds = os.getenv("ALLOWED_GUILDS").split(', ')
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -21,15 +23,6 @@ openai_client = OpenAI(
     project=os.getenv("OPENAI_PROJECT_ID"),
     organization=os.getenv("OPENAI_ORGANIZATION_ID"),
 )
-
-allowed_channels = [
-    1090398857302638635,
-    1257847889489825815,
-]
-
-allowed_guilds = [
-    1032439727757996053,
-]
 
 
 # Prefix '-' in servers, no prefix in DMs
@@ -57,7 +50,7 @@ async def on_message(message):
     # if the bot wrote the message, ignore
     if message.author == bot.user:
         return
-    if message.channel.id in allowed_channels or message.guild.id in allowed_guilds:
+    if str(message.channel.id) in allowed_channels or str(message.guild.id) in allowed_guilds:
         try:
             # determine if message is command or not
             ctx = await bot.get_context(message)
@@ -70,7 +63,7 @@ async def on_message(message):
             pass
 
 
-# ============ Triggers any time an error occurs ==============
+# ============ Error handler ==============
 @bot.event
 async def on_command_error(ctx, error):
     """Command error handler"""
@@ -151,7 +144,7 @@ async def teams(ctx, *args):
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
-        await on_command_error(e)
+        await on_command_error(ctx, e)
         return
 
 
@@ -159,10 +152,20 @@ async def teams(ctx, *args):
 @commands.cooldown(1, 300, commands.BucketType.user)
 async def gabe(ctx):
     """Gabe gambler"""
+
+    def sort_and_save():
+        with open("gabe_dict.json", "w") as x:
+            sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
+            sorted_dict = dict(sorted_list)
+            json.dump(sorted_dict, x)
+
     try:
+        author_id = str(ctx.author.id)
         rand_array = np.random.normal(int(5), int(10), int(100))
         rand_num = int(abs(rand_array[0]))
         displayed_num = rand_num + 1
+        record = 0
+
         if ctx.message.guild:
             await ctx.message.delete()
             await ctx.send(f"<@{ctx.author.id}> Ga{'a'*rand_num}be ({displayed_num})")
@@ -172,35 +175,32 @@ async def gabe(ctx):
         # open json file
         with open("gabe_dict.json", "r") as f:
             gabe_dict = json.load(f)
-            author_id = str(ctx.author.id)
-            record = 0
 
-            for value in gabe_dict.values():
-                if value > record:
-                    record = value
+        # check all values in case of sorting issue
+        for value in gabe_dict.values():
+            if value > record:
+                record = value
 
-        if record < displayed_num:
+        # if you got a new world record
+        if displayed_num > record:
             await ctx.send(f"<:WTFFFFF:1284584326654066791>")
             await ctx.send(f"**New world record! ({displayed_num})**\nPrevious was {record}")
             gabe_dict[author_id] = displayed_num
-            # sort
-            with open("gabe_dict.json", "w") as f:
-                sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
-                sorted_dict = dict(sorted_list)
-                json.dump(sorted_dict, f)
-        else:
-            if author_id in gabe_dict and displayed_num > gabe_dict[author_id]:
-                await ctx.send(f"**New high score! ({displayed_num})**\nPrevious was {gabe_dict[author_id]}")
-                if gabe_dict[author_id] < displayed_num:
-                    gabe_dict[author_id] = displayed_num
-            if author_id not in gabe_dict:
-                gabe_dict[author_id] = displayed_num
-            # sort
-            with open("gabe_dict.json", "w") as f:
-                sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
-                sorted_dict = dict(sorted_list)
-                json.dump(sorted_dict, f)
-                # if the ctx.author.id (refer now as author_id) is inside dictionary
+            sort_and_save()
+            return
+
+        # if you got a new high score
+        if author_id in gabe_dict and displayed_num > gabe_dict[author_id]:
+            await ctx.send(f"**New high score! ({displayed_num})**\nPrevious was {gabe_dict[author_id]}")
+            gabe_dict[author_id] = displayed_num
+            sort_and_save()
+            return
+
+        # if it's your first score
+        if author_id not in gabe_dict:
+            gabe_dict[author_id] = displayed_num
+            sort_and_save()
+            return
 
         # 2024-09-14
         # {"176502309965135874": 21, "417463311961948162": 19, "107317852612075520": 11, "228919057368350721": 10, "302681717225947139": 8}
@@ -208,38 +208,39 @@ async def gabe(ctx):
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
-        await on_command_error(e)
+        await on_command_error(ctx, e)
         return
 
 
 @bot.command()
-@commands.cooldown(1, 1, commands.BucketType.user)
+@commands.cooldown(1, 3, commands.BucketType.user)
 async def glb(ctx):
     """Gabe leaderboard"""
     try:
+        author_id = str(ctx.author.id)
         ranks = "1\n2\n3\n4\n5"
+
         # open json file
         with open("gabe_dict.json", "r") as f:
-            gabe_dict = json.load(f)
-            author_id = str(ctx.author.id)
+            gabe_dict_unsorted = json.load(f)
+            # sort for good measure
+            sorted_list = sorted(gabe_dict_unsorted.items(), key=lambda x: x[1], reverse=True)
+            gabe_dict = dict(sorted_list)
 
-            gabe_keys = list(gabe_dict.keys())[0: 5]
-            gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys])
+        gabe_keys = list(gabe_dict.keys())[0: 5]
+        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys])
 
-            gabe_vals = list(gabe_dict.values())[0: 5]
-            gabe_vals = '\n'.join(str(v) for v in gabe_vals)
+        gabe_vals = list(gabe_dict.values())[0: 5]
+        gabe_vals = '\n'.join(str(v) for v in gabe_vals)
 
-            # if you're not in the top 5
-            if author_id not in gabe_keys and author_id in gabe_dict:
-                # find your position in leaderboard
-                temp = list(gabe_dict.items())
-                rank = [idx for idx, key in enumerate(temp) if key[0] == author_id][0]
-                ranks += f"\n...\n{str(rank + 1)}"
-                gabe_keys += f"\n...\n<@{author_id}>"
-                gabe_vals += f"\n...\n{gabe_dict[author_id]}"
-
-            print(f"gabe_keys: {gabe_keys}")
-            print(f"gabe_vals: {gabe_vals}")
+        # if you're not in the top 5
+        if author_id not in gabe_keys and author_id in gabe_dict:
+            # find your position in leaderboard and display below top 5
+            temp = list(gabe_dict.items())
+            rank = [idx for idx, key in enumerate(temp) if key[0] == author_id][0]
+            ranks += f"\n...\n{str(rank + 1)}"
+            gabe_keys += f"\n...\n<@{author_id}>"
+            gabe_vals += f"\n...\n{gabe_dict[author_id]}"
 
         # create discord embed message
         embed = discord.Embed(
@@ -253,43 +254,41 @@ async def glb(ctx):
         await ctx.send(embed=embed)
 
     except Exception as e:
-        await ctx.message.delete()
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
-        await on_command_error(e)
+        await on_command_error(ctx, e)
         return
 
 
 # Random cat image
 
 @bot.command()
-@commands.cooldown(1, 1, commands.BucketType.user)
+@commands.cooldown(1, 3, commands.BucketType.user)
 async def cat(ctx, d: str = commands.parameter(default=0, description=": for a description")):
     """Get a random image of a cat, `-cat d` for an image with a description."""
     image_desc = 0
     if d == "d":
         image_desc = 1
     try:
-        API_KEY = "live_voBalQCdm9cV0eKadrDRynRMjDM65hr2tUkXYYBfIQ0BKIBiwvzTmeDWXc4PApK0"
-        res = requests.get(f"https://api.thecatapi.com/v1/images/search?api_key={API_KEY}&has_breeds={image_desc}")
+        api_key = os.getenv("CAT_API_KEY")
+        res = requests.get(f"https://api.thecatapi.com/v1/images/search?api_key={api_key}&has_breeds={image_desc}")
         data = res.json()
         breeds = data[0]['breeds']
 
         await ctx.send(data[0]['url'])
-        if image_desc: await ctx.send(f"{breeds[0]['name']}: {breeds[0]['description']}")
+        if image_desc:
+            await ctx.send(f"**{breeds[0]['name']}**: {breeds[0]['description']}")
 
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
-        await on_command_error(error=e)
+        await on_command_error(ctx, e)
         return
-
-
 
 
 # WFM
 @bot.command()
-@commands.cooldown(1, 1, commands.BucketType.user)
+@commands.cooldown(1, 3, commands.BucketType.user)
 async def orders(ctx, *, arg):
     """Get orders"""
     try:
@@ -323,7 +322,7 @@ async def orders(ctx, *, arg):
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
-        await on_command_error(e)
+        await on_command_error(ctx, e)
         return
 
 
@@ -349,14 +348,11 @@ async def c(ctx, *args):
 
     except Exception as e:
         finish_reason = completion.choices[0].finish_reason
-        if ctx.message.guild:
-            await ctx.message.delete()
         await ctx.send(f"Something went wrong", delete_after=2)
         print(finish_reason)
         print(e)
+        await on_command_error(ctx, e)
         return
-
-
 
 
 @bot.command()
@@ -369,9 +365,10 @@ async def test(ctx):
 @bot.command()
 async def say(ctx, *args):
     message = " ".join(args)
+    admin_ids = os.getenv("ADMIN_IDS").split(', ')
     if ctx.message.guild:
         await ctx.message.delete()
-    if ctx.author.id != 107317852612075520:
+    if str(ctx.author.id) not in admin_ids:
         return
     await ctx.send(message)
 
