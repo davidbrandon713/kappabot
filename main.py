@@ -7,6 +7,7 @@ from discord.ext import commands
 import random
 import numpy as np
 from dotenv import load_dotenv
+from openai import OpenAI
 load_dotenv()
 
 
@@ -15,6 +16,11 @@ description = 'A bot used for practicing Python'
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
+openai_client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    project=os.getenv("OPENAI_PROJECT_ID"),
+    organization=os.getenv("OPENAI_ORGANIZATION_ID"),
+)
 
 allowed_channels = [
     1090398857302638635,
@@ -142,8 +148,10 @@ async def teams(ctx, *args):
         embed.add_field(name="Team 2", inline=True, value='\n'.join(team_b.split(', ')))
         await ctx.send(embed=embed)
 
-    except Exception:
+    except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(e)
         return
 
 
@@ -154,36 +162,53 @@ async def gabe(ctx):
     try:
         rand_array = np.random.normal(int(5), int(10), int(100))
         rand_num = int(abs(rand_array[0]))
+        displayed_num = rand_num + 1
         if ctx.message.guild:
             await ctx.message.delete()
-            await ctx.send(f"<@{ctx.author.id}> Ga{'a'*rand_num}be ({rand_num + 1})")
+            await ctx.send(f"<@{ctx.author.id}> Ga{'a'*rand_num}be ({displayed_num})")
         else:
-            await ctx.send(f"Ga{'a'*rand_num}be ({rand_num + 1})")
+            await ctx.send(f"Ga{'a'*rand_num}be ({displayed_num})")
 
         # open json file
         with open("gabe_dict.json", "r") as f:
             gabe_dict = json.load(f)
+            author_id = str(ctx.author.id)
+            record = 0
 
-        # if the ctx.author.id (refer now as author_id) is inside dictionary
-        if (author_id := str(ctx.author.id)) in gabe_dict:
-            if gabe_dict[author_id] < rand_num + 1:
-                await ctx.send(f"**New high score!**\nPrevious was {gabe_dict[author_id]}")
-                gabe_dict[author_id] = rand_num + 1
-                # sort
-                with open("gabe_dict.json", "w") as f:
-                    sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
-                    sorted_dict = dict(sorted_list)
-                    json.dump(sorted_dict, f)
-        else:
-            gabe_dict[author_id] = rand_num + 1
+            for value in gabe_dict.values():
+                if value > record:
+                    record = value
+
+        if record < displayed_num:
+            await ctx.send(f"<:WTFFFFF:1284584326654066791>")
+            await ctx.send(f"**New world record! ({displayed_num})**\nPrevious was {record}")
+            gabe_dict[author_id] = displayed_num
             # sort
             with open("gabe_dict.json", "w") as f:
                 sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
                 sorted_dict = dict(sorted_list)
                 json.dump(sorted_dict, f)
+        else:
+            if author_id in gabe_dict and displayed_num > gabe_dict[author_id]:
+                await ctx.send(f"**New high score! ({displayed_num})**\nPrevious was {gabe_dict[author_id]}")
+                if gabe_dict[author_id] < displayed_num:
+                    gabe_dict[author_id] = displayed_num
+            if author_id not in gabe_dict:
+                gabe_dict[author_id] = displayed_num
+            # sort
+            with open("gabe_dict.json", "w") as f:
+                sorted_list = sorted(gabe_dict.items(), key=lambda x: x[1], reverse=True)
+                sorted_dict = dict(sorted_list)
+                json.dump(sorted_dict, f)
+                # if the ctx.author.id (refer now as author_id) is inside dictionary
+
+        # 2024-09-14
+        # {"176502309965135874": 21, "417463311961948162": 19, "107317852612075520": 11, "228919057368350721": 10, "302681717225947139": 8}
+
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
+        await on_command_error(e)
         return
 
 
@@ -192,18 +217,29 @@ async def gabe(ctx):
 async def glb(ctx):
     """Gabe leaderboard"""
     try:
-        if ctx.message.guild:
-            await ctx.message.delete()
-
+        ranks = "1\n2\n3\n4\n5"
         # open json file
         with open("gabe_dict.json", "r") as f:
             gabe_dict = json.load(f)
+            author_id = str(ctx.author.id)
 
-        gabe_keys = list(gabe_dict.keys())[0: 5]
-        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys])
+            gabe_keys = list(gabe_dict.keys())[0: 5]
+            gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys])
 
-        gabe_vals = list(gabe_dict.values())[0: 5]
-        gabe_vals = '\n'.join(str(e) for e in gabe_vals)
+            gabe_vals = list(gabe_dict.values())[0: 5]
+            gabe_vals = '\n'.join(str(v) for v in gabe_vals)
+
+            # if you're not in the top 5
+            if author_id not in gabe_keys and author_id in gabe_dict:
+                # find your position in leaderboard
+                temp = list(gabe_dict.items())
+                rank = [idx for idx, key in enumerate(temp) if key[0] == author_id][0]
+                ranks += f"\n...\n{str(rank + 1)}"
+                gabe_keys += f"\n...\n<@{author_id}>"
+                gabe_vals += f"\n...\n{gabe_dict[author_id]}"
+
+            print(f"gabe_keys: {gabe_keys}")
+            print(f"gabe_vals: {gabe_vals}")
 
         # create discord embed message
         embed = discord.Embed(
@@ -211,14 +247,16 @@ async def glb(ctx):
             title="Gaaaaabe Leaderboard",
         )
         embed.set_thumbnail(url="https://cdn.frankerfacez.com/emoticon/588022/2")
-        embed.add_field(name="Rank", inline=True, value="1\n2\n3\n4\n5")
+        embed.add_field(name="Rank", inline=True, value=ranks)
         embed.add_field(name="User", inline=True, value=gabe_keys)
         embed.add_field(name="Score", inline=True, value=gabe_vals)
         await ctx.send(embed=embed)
 
     except Exception as e:
+        await ctx.message.delete()
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
+        await on_command_error(e)
         return
 
 
@@ -226,18 +264,24 @@ async def glb(ctx):
 
 @bot.command()
 @commands.cooldown(1, 1, commands.BucketType.user)
-async def cat(ctx):
-    """Get a random image of a cat"""
+async def cat(ctx, d: str = commands.parameter(default=0, description=": for a description")):
+    """Get a random image of a cat, `-cat d` for an image with a description."""
+    image_desc = 0
+    if d == "d":
+        image_desc = 1
     try:
-        if ctx.message.guild:
-            await ctx.message.delete()
-        res = requests.get(f"https://api.thecatapi.com/v1/images/search")
+        API_KEY = "live_voBalQCdm9cV0eKadrDRynRMjDM65hr2tUkXYYBfIQ0BKIBiwvzTmeDWXc4PApK0"
+        res = requests.get(f"https://api.thecatapi.com/v1/images/search?api_key={API_KEY}&has_breeds={image_desc}")
         data = res.json()
+        breeds = data[0]['breeds']
+
         await ctx.send(data[0]['url'])
+        if image_desc: await ctx.send(f"{breeds[0]['name']}: {breeds[0]['description']}")
 
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
+        await on_command_error(error=e)
         return
 
 
@@ -253,25 +297,66 @@ async def orders(ctx, *, arg):
             await ctx.message.delete()
         converted_str = '_'.join(arg.split(' '))
 
-        res = requests.get(f"https://api.warframe.market/v1/items/{converted_str}/orders")
+        res = requests.get(f"https://api.warframe.market/v1/items/{converted_str}/orders?include=item")
         data = res.json()
         order_data = data['payload']['orders']
+        sorted_data = list(sorted(order_data, key=lambda x: x['platinum']))
+        filtered_data = list(filter(lambda x: x['order_type'] == 'sell', sorted_data))
+
+        displayed_users = '\n'.join(order['user']['ingame_name'] for order in filtered_data[0:8])
+        displayed_prices = '\n'.join(str(order['platinum']) for order in filtered_data[0:8])
+        displayed_quantity = '\n'.join(str(order['quantity']) for order in filtered_data[0:8])
+
+        print(displayed_users)
 
         # create discord embed message
         embed = discord.Embed(
             colour=discord.Color.dark_teal(),
-            title=arg + " orders",
+            title=arg.title() + " Orders",
         )
-        # embed.set_thumbnail(url=f"https://warframe.market/static/assets/{item['icon']}")
-        embed.add_field(name="User", inline=True, value=order_data['user']['ingame_name'])
-        embed.add_field(name="Price", inline=True, value=order_data['platinum'])
-        embed.add_field(name="Quantity", inline=True, value=order_data['quantity'])
+        embed.set_thumbnail(url=f"https://warframe.market/static/assets/{data['include']['item']['items_in_set'][0]['thumb']}")
+        embed.add_field(name="User", inline=True, value=displayed_users)
+        embed.add_field(name="Price", inline=True, value=displayed_prices)
+        embed.add_field(name="Quantity", inline=True, value=displayed_quantity)
         await ctx.send(embed=embed)
 
     except Exception as e:
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
+        await on_command_error(e)
         return
+
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def c(ctx, *args):
+    """ChatGPT response"""
+    prompt = ' '.join(args)
+    completion = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        temperature=0.7,
+    )
+    try:
+        response = completion.choices[0].message.content
+        await ctx.send(response)
+
+    except Exception as e:
+        finish_reason = completion.choices[0].finish_reason
+        if ctx.message.guild:
+            await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(finish_reason)
+        print(e)
+        return
+
+
 
 
 @bot.command()
@@ -282,12 +367,13 @@ async def test(ctx):
 
 
 @bot.command()
-async def say(ctx, arg):
+async def say(ctx, *args):
+    message = " ".join(args)
     if ctx.message.guild:
         await ctx.message.delete()
     if ctx.author.id != 107317852612075520:
         return
-    await ctx.send(arg)
+    await ctx.send(message)
 
 
 # Run bot

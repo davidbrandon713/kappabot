@@ -1,6 +1,10 @@
 os
+json
+requests
 traceback
-random
 discord
+discord.ext
+random
 numpy
 python-dotenv
+openai
