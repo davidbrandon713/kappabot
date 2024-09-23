@@ -235,7 +235,6 @@ async def glb(ctx):
         gabe_vals_list = list(gabe_dict.values())[0: 5]
         gabe_vals = '\n'.join(str(v) for v in gabe_vals_list)
 
-        print(len(gabe_keys_list))
         ranks = '\n'.join(ranks_list[0:len(gabe_keys_list)])
 
         # if you're not in the top 5
