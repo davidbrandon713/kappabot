@@ -214,13 +214,15 @@ async def gabe(ctx):
 
 
 @bot.command()
-@commands.cooldown(1, 3, commands.BucketType.user)
-async def glb(ctx):
+@commands.cooldown(1, 2, commands.BucketType.user)
+async def glb(ctx, count: str = commands.parameter(default=5, description=": 'all' for all scores")):
     """Gabe leaderboard"""
+    if count == "all":
+        count = 50
+
     try:
         author_id = str(ctx.author.id)
-        ranks_list = ["1", "2", "3", "4", "5"]
-        # ranks = "1\n2\n3\n4\n5"
+        ranks_list = list(str(i) for i in range(1, count))
 
         # open json file
         with open(gabe_file, "r") as r:
@@ -229,10 +231,10 @@ async def glb(ctx):
             sorted_list = sorted(gabe_dict_unsorted.items(), key=lambda x: x[1], reverse=True)
             gabe_dict = dict(sorted_list)
 
-        gabe_keys_list = list(gabe_dict.keys())[0: 5]
+        gabe_keys_list = list(gabe_dict.keys())[0: int(count)]
         gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys_list])
 
-        gabe_vals_list = list(gabe_dict.values())[0: 5]
+        gabe_vals_list = list(gabe_dict.values())[0: int(count)]
         gabe_vals = '\n'.join(str(v) for v in gabe_vals_list)
 
         ranks = '\n'.join(ranks_list[0:len(gabe_keys_list)])
@@ -364,6 +366,13 @@ async def c(ctx, *args):
 
 
 @bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def shaun(ctx):
+    await ctx.send(f"https://media.discordapp.net/attachments/1257847889489825814/1286775167799918655/8xn0pq.gif?ex=66"
+                   f"f316c3&is=66f1c543&hm=b43127a065c6e80892b833520b8296b8699f655d72e862a326e5abdc4b9f910d&")
+
+
+@bot.command()
 async def test(ctx):
     if ctx.message.guild:
         await ctx.message.delete()
@@ -380,6 +389,11 @@ async def say(ctx, *args):
         return
     await ctx.send(message)
 
+
+@bot.command()
+async def shutdown(ctx):
+    await ctx.send("gg")
+    exit()
 
 # Run bot
 bot.run(os.getenv("token"))
