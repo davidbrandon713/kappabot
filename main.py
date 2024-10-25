@@ -35,7 +35,7 @@ def command_prefix(bot, message):
 
 
 # Assigning intents *REQUIRED TO ACCESS MESSAGE CONTENTS*
-bot = commands.Bot(command_prefix=command_prefix, description=description, intents=intents)
+bot = commands.Bot(command_prefix=command_prefix, description=description, intents=intents, case_insensitive=True)
 
 
 # =================== Triggers one time upon startup =======================
@@ -121,15 +121,15 @@ async def flip(ctx):
 @commands.cooldown(1, 1, commands.BucketType.user)
 async def teams(ctx, *args):
     """team randomizer"""
-    if len(args) < 2:
-        if ctx.message.guild:
+
+    if ctx.message.guild:
             await ctx.message.delete()
+
+    if len(args) < 2:
         await ctx.send(f"requires at least 2 players", delete_after=2)
         return
 
     try:
-        if ctx.message.guild:
-            await ctx.message.delete()
         players = list(args)
         random.shuffle(players)
         team_a = ', '.join(players[:len(players)//2]).title()
@@ -169,13 +169,13 @@ async def gabe(ctx):
 
         if ctx.message.guild:
             await ctx.message.delete()
-            await ctx.send(f"<@{ctx.author.id}> Ga{'a'*rand_num}be ({displayed_num})")
+            await ctx.send(f"<@{author_id}> Ga{'a'*rand_num}be ({displayed_num})")
         else:
             await ctx.send(f"Ga{'a'*rand_num}be ({displayed_num})")
 
         # open json file
         with open(gabe_file, "r") as r:
-            gabe_dict = json.load(r)
+            gabe_dict: dict = json.load(r)
 
         # check all values in case of sorting issue
         for value in gabe_dict.values():
@@ -222,7 +222,7 @@ async def glb(ctx, count: str = commands.parameter(default=5, description=": 'al
 
     try:
         author_id = str(ctx.author.id)
-        ranks_list = list(str(i) for i in range(1, count))
+        ranks_list = list(str(i + 1) for i in range(0, int(count)))
 
         # open json file
         with open(gabe_file, "r") as r:
@@ -368,9 +368,12 @@ async def c(ctx, *args):
 @bot.command()
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def shaun(ctx):
-    await ctx.send(f"https://media.discordapp.net/attachments/1257847889489825814/1286775167799918655/8xn0pq.gif?ex=66"
-                   f"f316c3&is=66f1c543&hm=b43127a065c6e80892b833520b8296b8699f655d72e862a326e5abdc4b9f910d&")
+    await ctx.send(f"https://i.imgflip.com/8xn0pq.gif")
 
+
+@bot.command()
+async def brachy(ctx):
+    await ctx.send(f"https://i.imgflip.com/95g1yb.jpg")
 
 @bot.command()
 async def test(ctx):
@@ -389,11 +392,11 @@ async def say(ctx, *args):
         return
     await ctx.send(message)
 
-
-@bot.command()
-async def shutdown(ctx):
-    await ctx.send("gg")
-    exit()
+# @bot.command()
+# async def shutdown(ctx):
+#     # broken
+#     await ctx.send("gg")
+#     exit()
 
 # Run bot
 bot.run(os.getenv("token"))
