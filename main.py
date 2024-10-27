@@ -123,7 +123,7 @@ async def teams(ctx, *args):
     """team randomizer"""
 
     if ctx.message.guild:
-            await ctx.message.delete()
+        await ctx.message.delete()
 
     if len(args) < 2:
         await ctx.send(f"requires at least 2 players", delete_after=2)
@@ -162,8 +162,7 @@ async def gabe(ctx):
 
     try:
         author_id = str(ctx.author.id)
-        rand_array = np.random.normal(int(5), int(10), int(100))
-        rand_num = int(abs(rand_array[0]))
+        rand_num = abs(int(np.random.normal(loc=5, scale=10)))
         displayed_num = rand_num + 1
         record = 0
 
