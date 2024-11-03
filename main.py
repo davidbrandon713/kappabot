@@ -217,35 +217,47 @@ async def gabe(ctx):
 async def glb(ctx, count: str = commands.parameter(default=5, description=": 'all' for all scores")):
     """Gabe leaderboard"""
     if count == "all":
-        count = 50
+        count = -1
 
     try:
         author_id = str(ctx.author.id)
-        ranks_list = list(str(i + 1) for i in range(0, int(count)))
-
         # open json file
         with open(gabe_file, "r") as r:
             gabe_dict_unsorted = json.load(r)
             # sort for good measure
             sorted_list = sorted(gabe_dict_unsorted.items(), key=lambda x: x[1], reverse=True)
             gabe_dict = dict(sorted_list)
+            gabe_keys_list = list(gabe_dict.keys())
+            gabe_items_list = list(gabe_dict.items())
 
-        gabe_keys_list = list(gabe_dict.keys())[0: int(count)]
-        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys_list])
+        # keys to display (@username)
+        gabe_keys_temp = gabe_keys_list[:int(count)]
+        gabe_keys = '\n'.join(["<@" + e + ">" for e in gabe_keys_temp])
 
-        gabe_vals_list = list(gabe_dict.values())[0: int(count)]
-        gabe_vals = '\n'.join(str(v) for v in gabe_vals_list)
+        # values to display for score
+        gabe_dict_temp = dict(gabe_items_list[:int(count)])
+        gabe_vals_list_highlighted = [
+            f"***{v}***" if k == author_id else str(v)
+            for k, v in gabe_dict_temp.items()
+        ]
+        gabe_vals = '\n'.join(gabe_vals_list_highlighted)
 
-        ranks = '\n'.join(ranks_list[0:len(gabe_keys_list)])
+        # ranks to display (default 1 - 5)
+        ranks_list = list(str(i + 1) for i in range(len(gabe_keys_temp)))
+        if author_id in gabe_keys_list:
+            ranks_list = [
+                f"***{num}***" if ranks_list.index(num) == gabe_keys_list.index(author_id) else num
+                for num in ranks_list
+            ]
+        ranks = '\n'.join(ranks_list)
 
         # if you're not in the top 5
-        if author_id not in gabe_keys and author_id in gabe_dict:
+        if author_id not in gabe_keys_temp and author_id in gabe_dict:
             # find your position in leaderboard and display below top 5
-            temp = list(gabe_dict.items())
-            rank = [idx for idx, key in enumerate(temp) if key[0] == author_id][0]
-            ranks += f"\n...\n{str(rank + 1)}"
+            rank = [str(idx + 1) for idx, key in enumerate(gabe_items_list) if key[0] == author_id][0]
+            ranks += f"\n...\n***{rank}***"
             gabe_keys += f"\n...\n<@{author_id}>"
-            gabe_vals += f"\n...\n{gabe_dict[author_id]}"
+            gabe_vals += f"\n...\n***{gabe_dict[author_id]}***"
 
         # create discord embed message
         embed = discord.Embed(
@@ -309,11 +321,12 @@ async def orders(ctx, *, arg):
             filter(lambda x: x['order_type'] == 'sell' and x['user']['status'] == 'ingame', sorted_data)
         )
 
-        displayed_users = '\n'.join(order['user']['ingame_name'] for order in filtered_data[0:8])
-        displayed_prices = '\n'.join(str(order['platinum']) for order in filtered_data[0:8])
-        displayed_quantity = '\n'.join(str(order['quantity']) for order in filtered_data[0:8])
-
-        print(displayed_users)
+        displayed_users = '\n'.join(
+            f"[{order['user']['ingame_name']}](https://warframe.market/profile/{order['user']['ingame_name']})"
+            for order in filtered_data[:8]
+        )
+        displayed_prices = '\n'.join(str(order['platinum']) for order in filtered_data[:8])
+        displayed_quantity = '\n'.join(str(order['quantity']) for order in filtered_data[:8])
 
         # create discord embed message
         embed = discord.Embed(
@@ -374,11 +387,12 @@ async def shaun(ctx):
 async def brachy(ctx):
     await ctx.send(f"https://i.imgflip.com/95g1yb.jpg")
 
+
 @bot.command()
 async def test(ctx):
     if ctx.message.guild:
         await ctx.message.delete()
-    await ctx.send("Test", delete_after=2)
+    await ctx.send(f"Test", delete_after=2)
 
 
 @bot.command()
@@ -390,12 +404,6 @@ async def say(ctx, *args):
     if str(ctx.author.id) not in admin_ids:
         return
     await ctx.send(message)
-
-# @bot.command()
-# async def shutdown(ctx):
-#     # broken
-#     await ctx.send("gg")
-#     exit()
 
 # Run bot
 bot.run(os.getenv("token"))
