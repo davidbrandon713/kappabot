@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from bs4 import BeautifulSoup
 import traceback
 import discord
 from discord.ext import commands
@@ -121,9 +122,6 @@ async def flip(ctx):
 @commands.cooldown(1, 1, commands.BucketType.user)
 async def teams(ctx, *args):
     """team randomizer"""
-
-    if ctx.message.guild:
-        await ctx.message.delete()
 
     if len(args) < 2:
         await ctx.send(f"requires at least 2 players", delete_after=2)
@@ -297,6 +295,33 @@ async def cat(ctx, d: str = commands.parameter(default=0, description=": for a d
             await ctx.send(f"**{breeds[0]['name']}**: {breeds[0]['description']}")
 
     except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def fish(ctx):
+    """Get a random image of a fish"""
+
+    try:
+        fish_url = "https://biogeodb.stri.si.edu/caribbean/en/pages/random"
+        htmldata = requests.get(fish_url).text
+        soup = BeautifulSoup(htmldata, 'html.parser')
+        data = []
+        for item in soup.find_all('img'):
+            data.append(item['src'])
+
+        fish_image = data[2]
+        print(fish_image)
+
+        await ctx.send(fish_image)
+
+    except Exception as e:
+        await ctx.message.delete()
         await ctx.send(f"Something went wrong", delete_after=2)
         print(e)
         await on_command_error(ctx, e)
