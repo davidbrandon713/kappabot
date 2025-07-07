@@ -215,7 +215,7 @@ async def gabe(ctx):
 async def glb(ctx, count: str = commands.parameter(default=5, description=": 'all' for all scores")):
     """Gabe leaderboard"""
     if count == "all":
-        count = -1
+        count = 100;
 
     try:
         author_id = str(ctx.author.id)
@@ -319,6 +319,121 @@ async def fish(ctx):
         print(fish_image)
 
         await ctx.send(fish_image)
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def fox(ctx):
+    """Get a random image of a fox"""
+
+    try:
+        fox_url = "https://randomfox.ca/"
+        htmldata = requests.get(fox_url).text
+        soup = BeautifulSoup(htmldata, 'html.parser')
+        data = []
+        for item in soup.find_all('img'):
+            data.append(item['src'])
+
+        fox_image = data[1]
+
+        await ctx.send(fox_image)
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def frog(ctx):
+    """Get a random image of a frog"""
+    try:
+        res = requests.get(f"https://frogs.media/api/random")
+        data = res.json()
+        image_url = data['url']
+
+        await ctx.send(image_url)
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def bunny(ctx):
+    """Get a random image of a rabbit."""
+    try:
+        res = requests.get(f"https://rabbit-api-two.vercel.app/api/random")
+        data = res.json()
+
+        await ctx.send(data['url'])
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def panda(ctx):
+    """Get a random image of a panda."""
+    try:
+        res = requests.get("https://some-random-api.ml/animal/panda")
+        data = res.json()
+        print(data)
+
+        await ctx.send(f"{data['image']}")
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def capybara(ctx):
+    """Get a random image of a capybara."""
+    try:
+        res = requests.get(f"https://api.capy.lol/v1/capybara?json=true")
+        data = res.json()
+
+        await ctx.send(data['data']['url'])
+
+    except Exception as e:
+        await ctx.message.delete()
+        await ctx.send(f"Something went wrong", delete_after=2)
+        print(e)
+        await on_command_error(ctx, e)
+        return
+
+
+@bot.command()
+@commands.cooldown(1, 3, commands.BucketType.user)
+async def duck(ctx):
+    """Get a random image of a duck"""
+    try:
+        res = requests.get(f"https://random-d.uk/api/random")
+        data = res.json()
+
+        await ctx.send(data['url'])
 
     except Exception as e:
         await ctx.message.delete()
